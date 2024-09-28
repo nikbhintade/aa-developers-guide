@@ -266,4 +266,109 @@ Right now we only have to think about and know what only 2 fields: calldata, and
 
 ### validateUserOp Function
 
-validateUserOp function validates the UserOperation and some extra things but as we have seen in `BaseAccount` that is already implemented and part of it which validates the signature i.e. `_validateSignature` function is remaining and expected to be implemented by the developer of the account contract.
+`validateUserOp` function validates the UserOperation and some extra things but as we have seen in `BaseAccount` that is already implemented and part of it which validates the signature i.e. `_validateSignature` function is remaining and expected to be implemented by the developer of the account contract. 
+
+We are going to use ECDSA signature to verify the UserOperation is signed by the owner of the account contract. If signer and owner is same, we return `SIG_VALIDATION_SUCCESS` else `SIG_VALIDATION_FAILED`.
+
+To verify ECDSA signature we can use ecrecover but using library from openzeppelin is better way to do it as it removes lot of extra work that we might had to do when using ecrecover directly. We will install openzeppelin and then start with writing the function.
+
+```bash
+forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-commit
+```
+
+You should see following message in the terminal if OpenZeppelin is installed correctly.
+
+```bash
+Installed openzeppelin-contracts v5.0.2
+```
+
+Now we can write `_validateSignature`, the function signature for this function is already defined let’s take that and override it.
+
+```solidity
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        view
+        override
+        returns (uint256) {}
+```
+
+First step is to create the signed message hash using userOpHash which will be used to get address of signer. To get the address we are going to use recover function which takes signature and hashed message.
+
+```solidity
+		    bytes32 digest = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        address messageSigner = ECDSA.recover(digest, userOp.signature);
+```
+
+Now that we have `messageSigner`. We can compare that with `i_owner` if they are same then we will return `SIG_VALIDATION_SUCCESS`, if not then `SIG_VALIDATION_FAILED`.
+
+```solidity
+        if (messageSigner == i_owner) {
+            return SIG_VALIDATION_SUCCESS;
+        } else {
+            return SIG_VALIDATION_FAILED;
+        }
+```
+
+At end the `_validateSignature` function will look like following.
+
+```solidity
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        view
+        override
+        returns (uint256)
+    {
+        bytes32 digest = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        address messageSigner = ECDSA.recover(digest, userOp.signature);
+
+        if (messageSigner == i_owner) {
+            return SIG_VALIDATION_SUCCESS;
+        } else {
+            return SIG_VALIDATION_FAILED;
+        }
+    }
+```
+
+### execute Function
+
+This function will be for account contract to interact with other accounts and contracts. The name of the this function doesn’t matter as the `EntryPoint` contract directly executes calldata. When sending UserOperation, the user or dapp user has been using need to construct that calldata.
+
+For this contract, the function will be called execute and will take address of contract/account to be called, value to be sent with call and calldata for the call as the arguments.
+
+```solidity
+function execute(address dest, uint256 value, bytes calldata funcCallData) external {}
+```
+
+As this function can sent assets and perform action on behalf of the contract, we need to restrict access to this function. To achieve this we will use function that is available in `BaseAccount`, **`_requireFromEntryPoint`.**
+
+Then just do the call and check if call succeeded, if fails we will revert with a `SimpleAccount__CallFailed` error which we will define at the top of the contract.
+
+```solidity
+    error SimpleAccount__CallFailed();
+```
+
+Let’s write rest of the function. Here is how it looks like.
+
+```solidity
+    function execute(address dest, uint256 value, bytes calldata funcCallData) external {
+        _requireFromEntryPoint();
+        (bool success, bytes memory result) = dest.call{value: value}(funcCallData);
+        if (!success) {
+            revert SimpleAccount__CallFailed(result);
+        }
+    }
+```
+
+With this function finished, we have completed our simple account which is ERC-4337 compliant and can be used with `EntryPoint` and any bundler.
+
+## Final Thoughts
+
+We covered some of the concept that we needed to understand to develop a simple account contract that satisfies requirements of ERC-4337. This article also walks through each function in that contract and libraries which we use like account-abstraction from eth-infinitism and ECDSA from OpenZeppelin.
+
+We also covered a bunch of concepts from ERC-4337 like bundlers, entrypoint, etc. We still don’t know a lot about them except for basics but let’s go over them as we need them.
+
+## Next Steps
+
+In the next article, we will test this contract and learn more intersting things about UserOperation like how to generate UserOperation hash via endpoint. If you want you can start writing tests right now and try to see if our contract is working as except. 
+
+I hope you liked this article and will follow the rest of the articles in this series.

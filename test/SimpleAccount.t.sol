@@ -124,7 +124,7 @@ contract SimpleAccountTest is Test {
         uint256 valueToSend = 1 ether;
 
         vm.prank(address(entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(SimpleAccount.SimpleAccount__CallFailed.selector, bytes("")));
+        vm.expectRevert(SimpleAccount.SimpleAccount__CallFailed.selector);
 
         simpleAccountHarness.execute(address(failTestContract), valueToSend, "");
     }

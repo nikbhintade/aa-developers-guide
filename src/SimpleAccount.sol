@@ -11,7 +11,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract SimpleAccount is BaseAccount {
     error SimpleAccount__NotFromEntryPoint();
-    error SimpleAccount__CallFailed(bytes result);
+    error SimpleAccount__CallFailed();
 
     IEntryPoint private immutable i_entryPoint;
     address private immutable i_owner;
@@ -39,9 +39,9 @@ contract SimpleAccount is BaseAccount {
 
     function execute(address dest, uint256 value, bytes calldata funcCallData) external {
         _requireFromEntryPoint();
-        (bool success, bytes memory result) = dest.call{value: value}(funcCallData);
+        (bool success,) = dest.call{value: value}(funcCallData);
         if (!success) {
-            revert SimpleAccount__CallFailed(result);
+            revert SimpleAccount__CallFailed();
         }
     }
 
