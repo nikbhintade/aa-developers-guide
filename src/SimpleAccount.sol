@@ -10,19 +10,11 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract SimpleAccount is BaseAccount {
-
     error SimpleAccount__NotFromEntryPoint();
     error SimpleAccount__CallFailed(bytes result);
 
     IEntryPoint private immutable i_entryPoint;
     address private immutable i_owner;
-
-    modifier onlyEntryPoint() {
-        if(msg.sender != address(i_entryPoint)){
-            revert SimpleAccount__NotFromEntryPoint();
-        }
-        _;
-    }
 
     constructor(address entryPointAddress, address owner) {
         i_entryPoint = IEntryPoint(entryPointAddress);
@@ -45,11 +37,12 @@ contract SimpleAccount is BaseAccount {
         }
     }
 
-    function execute(address dest, uint256 value, bytes calldata funcCallData) external onlyEntryPoint {
+    function execute(address dest, uint256 value, bytes calldata funcCallData) external {
+        _requireFromEntryPoint();
         (bool success, bytes memory result) = dest.call{value: value}(funcCallData);
-        if(!success) {
+        if (!success) {
             revert SimpleAccount__CallFailed(result);
-        } 
+        }
     }
 
     function entryPoint() public view override returns (IEntryPoint) {

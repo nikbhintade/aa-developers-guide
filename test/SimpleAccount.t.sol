@@ -115,7 +115,7 @@ contract SimpleAccountTest is Test {
         vm.deal(wrongUser.addr, AMOUNT_TO_DEAL);
 
         vm.prank(wrongUser.addr);
-        vm.expectRevert(SimpleAccount.SimpleAccount__NotFromEntryPoint.selector);
+        vm.expectRevert(bytes("account: not from EntryPoint"));
         simpleAccountHarness.execute(wrongUser.addr, valueToSend, "");
     }
 
