@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
+import {console2 as console} from "forge-std/console2.sol";
+
 import {BaseAccount} from "account-abstraction/core/BaseAccount.sol";
-import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
 
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract SimpleAccount is BaseAccount {
-    error SimpleAccount__NotFromEntryPoint();
     error SimpleAccount__CallFailed();
 
     IEntryPoint private immutable i_entryPoint;
@@ -31,8 +32,10 @@ contract SimpleAccount is BaseAccount {
         address messageSigner = ECDSA.recover(digest, userOp.signature);
 
         if (messageSigner == i_owner) {
+            console.log("Validation Successful!!!");
             return SIG_VALIDATION_SUCCESS;
         } else {
+            console.log("Validation Failed!!!");
             return SIG_VALIDATION_FAILED;
         }
     }

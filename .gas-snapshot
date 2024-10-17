@@ -1,0 +1,6 @@
+SimpleAccountTest:test_StateVariable() (gas: 13836)
+SimpleAccountTest:test_executeCanBeCalledByEntryPointOnly() (gas: 49482)
+SimpleAccountTest:test_executeFailsOnCalledOtherThanEntryPoint() (gas: 12384)
+SimpleAccountTest:test_executeRevertOnFailedCall() (gas: 72158)
+SimpleAccountTest:test_vaildateSignatureReturnsSuccessCode() (gas: 28114)
+SimpleAccountTest:test_validateSignatureReturnsFailCode() (gas: 28060)
