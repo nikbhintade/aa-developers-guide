@@ -41,6 +41,7 @@ contract SimpleAccount is BaseAccount {
     }
 
     function execute(address dest, uint256 value, bytes calldata funcCallData) external {
+        console.log(gasleft());
         _requireFromEntryPoint();
         (bool success,) = dest.call{value: value}(funcCallData);
         if (!success) {

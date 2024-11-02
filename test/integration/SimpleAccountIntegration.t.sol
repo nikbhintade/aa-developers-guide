@@ -28,6 +28,7 @@ contract SimpleAccountIntegrationTest is Test {
     }
 
     function testSimpleAccountViaEntryPoint() public {
+        console.log(gasleft());
         // ARRANGE
 
         // 1. Add ether to the account contract
@@ -82,6 +83,7 @@ contract SimpleAccountIntegrationTest is Test {
 
         // ACT
 
+        console.log(gasleft());
         // 9. Send operations to entry point & check if the event is emitted
         vm.prank(bundler.addr);
         vm.expectEmit(true, true, true, false, address(entryPoint));
@@ -90,7 +92,7 @@ contract SimpleAccountIntegrationTest is Test {
 
         // Send it to entry point
         entryPoint.handleOps(userOperationArray, payable(bundler.addr));
-
+        console.log(gasleft());
         // ASSERT
 
         // 10. Check if the user operation was successful.
@@ -102,5 +104,7 @@ contract SimpleAccountIntegrationTest is Test {
         // Assert that the success value matches what was emitted
         assertEq(decodedNonce, 0); // Ensure the nonce matches
         assertEq(decodedSuccess, true); // Ensure the success value matches
+
+        console.log(entryPoint.balanceOf(address(simpleAccount)));
     }
 }
