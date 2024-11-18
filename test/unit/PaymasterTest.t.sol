@@ -6,6 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {EntryPoint} from "account-abstraction/core/EntryPoint.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
 import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {Paymaster} from "src/Paymaster.sol";
 
@@ -39,25 +40,39 @@ contract PaymasterTest is Test {
     }
 
     function testOwnerCanAddAndRemoveAddressesFromWhitelist() public {
-        address testUserOne = makeAddr("testUserOne");
+        address testUser = makeAddr("testUser");
 
         vm.prank(owner);
-        paymaster.addAddress(testUserOne);
-        assertEq(true, paymaster.checkWhitelist(testUserOne));
+        paymaster.addAddress(testUser);
+        assertEq(true, paymaster.checkWhitelist(testUser));
 
         vm.prank(owner);
-        paymaster.removeAddress(testUserOne);
-        assertEq(false, paymaster.checkWhitelist(testUserOne));
+        paymaster.removeAddress(testUser);
+        assertEq(false, paymaster.checkWhitelist(testUser));
     }
 
-    function testValidationWorkForWhitelistedAddresses() public {
-        address testUserOne = makeAddr("testUserOne");
+    function testAddAddressThrowErrorWhenCalledByNonOwner() public {
+        address testUser = makeAddr("testUser");
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        paymaster.addAddress(testUser);
+    }
+
+    function testRemoveAddressThrowErrorWhenCalledByNonOwner() public {
+        address testUser = makeAddr("testUser");
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        paymaster.removeAddress(testUser);
+    }
+
+    function testValidatePaymasterUserOp() public {
+        address testUser = makeAddr("testUser");
 
         vm.prank(owner);
-        paymaster.addAddress(testUserOne);
+        paymaster.addAddress(testUser);
 
         PackedUserOperation memory userOp = PackedUserOperation({
-            sender: testUserOne,
+            sender: testUser,
             nonce: 1,
             initCode: hex"",
             callData: hex"",
@@ -69,29 +84,17 @@ contract PaymasterTest is Test {
         });
 
         vm.prank(address(entryPoint));
-        (, uint256 validationData) = paymaster.exposeValidatePaymasterUserOp(userOp, hex"", 0);
+        (bytes memory context, uint256 validationData) = paymaster.exposeValidatePaymasterUserOp(userOp, hex"", 0);
 
         assertEq(validationData, SIG_VALIDATION_SUCCESS);
-    }
+        assertEq(context, hex"");
 
-    function testPaymasterValidationFailsForNonWhitelistAddress() public {
-        address testUserOne = makeAddr("testUserOne");
+        vm.prank(owner);
+        paymaster.removeAddress(testUser);
 
-        PackedUserOperation memory userOp = PackedUserOperation({
-            sender: testUserOne,
-            nonce: 1,
-            initCode: hex"",
-            callData: hex"",
-            accountGasLimits: hex"",
-            preVerificationGas: type(uint64).max,
-            gasFees: hex"",
-            paymasterAndData: hex"",
-            signature: hex""
-        });
-
-        vm.prank(address(entryPoint));
-        (, uint256 validationData) = paymaster.exposeValidatePaymasterUserOp(userOp, hex"", 0);
+        (context, validationData) = paymaster.exposeValidatePaymasterUserOp(userOp, hex"", 0);
 
         assertEq(validationData, SIG_VALIDATION_FAILED);
+        assertEq(context, hex"");
     }
 }

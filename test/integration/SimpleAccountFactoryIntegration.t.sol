@@ -39,7 +39,6 @@ contract SimpleAccountFactoryIntegration is Test {
 
         bytes memory initCode = abi.encodePacked(factory, factoryData);
 
-
         bytes32 accountGasLimits = bytes32(uint256(type(uint24).max) << 128 | uint256(type(uint24).max));
 
         PackedUserOperation memory userOp = PackedUserOperation({
